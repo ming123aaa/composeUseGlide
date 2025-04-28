@@ -43,6 +43,7 @@ import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.target.Target.SIZE_ORIGINAL
 import com.bumptech.glide.request.transition.Transition
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
@@ -115,23 +116,25 @@ fun ImageGlide(
     val drawable: MutableState<Drawable?> = remember(key) {
         mutableStateOf(null)
     }
+    val saveDrawableCallback: MutableState<Drawable.Callback?> = remember {
+        mutableStateOf(null)
+    }
     var mDrawable = drawable.value
     DisposableEffect(mDrawable) {
         onDispose {
             if (mDrawable is GifDrawable) {
                 mDrawable.stop()
+                mDrawable.callback = null
             }
-            mDrawable?.callback = null
         }
     }
     LaunchedEffect(mDrawable) {
-
         if (mDrawable != null) {
-            mPainter.value = drawable.value.toPainter()
+            mPainter.value = mDrawable.toPainter()
             if (mDrawable is GifDrawable) {
-                mDrawable.callback = object : Drawable.Callback {
+                var drawableCallBack = object : Drawable.Callback {
                     override fun invalidateDrawable(who: Drawable) {
-                        mPainter.value = drawable.value.toPainter()
+                        mPainter.value = mDrawable.toPainter() //刷新
                     }
 
                     override fun scheduleDrawable(
@@ -149,9 +152,13 @@ fun ImageGlide(
 
                     }
                 }
+                mDrawable.callback = drawableCallBack //设置的是一个弱引用
+                saveDrawableCallback.value=drawableCallBack //因为设置的是一个弱引用，需要保存一下，否则会出现动图停止的情况
+
                 if (!mDrawable.isRunning) {
                     mDrawable.start()
                 }
+
             }
         }
     }
@@ -163,10 +170,10 @@ fun ImageGlide(
                 .asDrawable()
         )
         withContext(Dispatchers.IO) {
-            var submit = glide.into<ComposeTarget>(ComposeTarget(drawable))
+            glide.into<ComposeTarget>(ComposeTarget(drawable))
         }
     }
-    Log.d(TAG, "ImageGlide: ${mPainter.value}")
+
     Image(
         painter = mPainter.value,
         modifier = modifier,
@@ -177,6 +184,7 @@ fun ImageGlide(
         colorFilter = colorFilter
     )
 }
+
 
 class ComposeTarget(val drawableState: MutableState<Drawable?>) : Target<Drawable> {
     override fun onLoadStarted(placeholder: Drawable?) {
@@ -225,7 +233,6 @@ class ComposeTarget(val drawableState: MutableState<Drawable?>) : Target<Drawabl
     }
 
     override fun onDestroy() {
-
     }
 
 }

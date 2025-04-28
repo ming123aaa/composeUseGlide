@@ -17,8 +17,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.request.RequestOptions
 import com.ohuang.composeforglide.ImageGlide
 import com.ohuang.composeforimage.ui.theme.ComposeForImageTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +46,6 @@ class MainActivity : ComponentActivity() {
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     //加载png图片
     Column(modifier) {
-
         Image(
             painter =
                 painterResource(R.mipmap.ic_launcher),
@@ -56,17 +58,14 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         Button(onClick = { isShow.value = !isShow.value }) {
             Text("load img")
         }
-
         if (isShow.value) {
-
             ImageGlide() {
                 load("http://192.168.2.97:8080/main/files/testImg.gif")
                     .error(R.mipmap.ic_launcher)
                     .placeholder(R.drawable.ic_launcher_background)
-
+                    .apply(RequestOptions().transform(RoundedCorners(50)))
             }
         }
-
         ImageGlide(id = R.mipmap.ic_launcher)
     }
 
